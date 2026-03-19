@@ -5162,6 +5162,26 @@ function PclZipUtilPathInclusion($p_dir, $p_path): int
         $p_path = PclZipUtilTranslateWinPath(getcwd(), false) . '/' . substr((string) $p_path, 1);
     }
 
+    // ----- Use realpath() for containment check when both paths exist on the filesystem.
+    // This defeats traversal bypasses via encoded separators, symlinks, and redundant dots
+    // that the lexicographic component comparison below cannot catch.
+    $v_real_dir  = realpath((string) $p_dir);
+    $v_real_path = realpath((string) $p_path);
+    if ($v_real_dir !== false && $v_real_path !== false) {
+        // Normalise directory separator to forward slash for consistent comparison.
+        $v_real_dir  = rtrim(str_replace('\\', '/', $v_real_dir), '/');
+        $v_real_path = str_replace('\\', '/', $v_real_path);
+        if ($v_real_path === $v_real_dir) {
+            return 2;
+        }
+        if (str_starts_with($v_real_path, $v_real_dir . '/')) {
+            return 1;
+        }
+        return 0;
+    }
+    // Fall through to the lexicographic check for paths that do not yet exist
+    // (e.g. files being extracted for the first time).
+
     // ----- Explode dir and path by directory separator
     $v_list_dir       = explode('/', (string) $p_dir);
     $v_list_dir_size  = sizeof($v_list_dir);
