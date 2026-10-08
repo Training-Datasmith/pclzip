@@ -76,6 +76,13 @@ install -m 0755 "\$tmp" /usr/local/bin/composer.phar
 rm -f "\$tmp"
 
 cp composer.json /tmp/composer.json.pinned
+restore_composer_json() {
+  if [ -f /tmp/composer.json.pinned ]; then
+    mv -f /tmp/composer.json.pinned composer.json
+  fi
+}
+trap restore_composer_json EXIT
+
 rm -rf vendor
 rm -f composer.lock
 php /usr/local/bin/composer.phar update --no-interaction --no-progress
@@ -92,7 +99,6 @@ for i in 1 2; do
 done
 echo "===== PHP 7.4 isolated testOptionDefaultThreshold ====="
 vendor/bin/phpunit -c phpunit.xml.dist --filter testOptionDefaultThreshold
-mv /tmp/composer.json.pinned composer.json
 EOS
 }
 
@@ -115,6 +121,13 @@ install -m 0755 "$tmp" /usr/local/bin/composer.phar
 rm -f "$tmp"
 
 cp composer.json /tmp/composer.json.pinned
+restore_composer_json() {
+  if [ -f /tmp/composer.json.pinned ]; then
+    mv -f /tmp/composer.json.pinned composer.json
+  fi
+}
+trap restore_composer_json EXIT
+
 rm -rf vendor
 rm -f composer.lock
 php /usr/local/bin/composer.phar update --no-interaction --no-progress
@@ -143,7 +156,6 @@ proof() {
 proof duplicate-instanceof testDuplicateByObject sed -i 's/$p_archive instanceof PclZip/(is_object($p_archive)) \&\& (get_class($p_archive) == '\''pclzip'\'')/' pclzip.lib.php
 proof merge-instanceof testMergeByObject sed -i 's/$p_archive_to_add instanceof PclZip/(is_object($p_archive_to_add)) \&\& (get_class($p_archive_to_add) == '\''pclzip'\'')/' pclzip.lib.php
 proof errorName-already-a-directory testAlreadyADirectory sed -i '/PCLZIP_ERR_ALREADY_A_DIRECTORY =>/d' pclzip.lib.php
-mv /tmp/composer.json.pinned composer.json
 EOS
 }
 
