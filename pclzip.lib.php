@@ -1151,7 +1151,7 @@ class PclZip
         $this->privErrorReset();
 
         // ----- Look if the $p_archive is a PclZip object
-        if ((is_object($p_archive)) && (get_class($p_archive) == 'pclzip')) {
+        if ($p_archive instanceof PclZip) {
 
             // ----- Duplicate the archive
             $v_result = $this->privDuplicate($p_archive->zipname);
@@ -1209,7 +1209,7 @@ class PclZip
         }
 
         // ----- Look if the $p_archive_to_add is a PclZip object
-        if ((is_object($p_archive_to_add)) && (get_class($p_archive_to_add) == 'pclzip')) {
+        if ($p_archive_to_add instanceof PclZip) {
 
             // ----- Merge the archive
             $v_result = $this->privMerge($p_archive_to_add);
@@ -1278,7 +1278,9 @@ class PclZip
             PCLZIP_ERR_UNSUPPORTED_COMPRESSION => 'PCLZIP_ERR_UNSUPPORTED_COMPRESSION',
             PCLZIP_ERR_UNSUPPORTED_ENCRYPTION => 'PCLZIP_ERR_UNSUPPORTED_ENCRYPTION',
             PCLZIP_ERR_INVALID_ATTRIBUTE_VALUE => 'PCLZIP_ERR_INVALID_ATTRIBUTE_VALUE',
-            PCLZIP_ERR_DIRECTORY_RESTRICTION => 'PCLZIP_ERR_DIRECTORY_RESTRICTION'
+            PCLZIP_ERR_ALREADY_A_DIRECTORY => 'PCLZIP_ERR_ALREADY_A_DIRECTORY',
+            PCLZIP_ERR_DIRECTORY_RESTRICTION => 'PCLZIP_ERR_DIRECTORY_RESTRICTION',
+            PCLZIP_ERR_USER_ABORTED => 'PCLZIP_ERR_USER_ABORTED'
         );
 
         if (isset($v_name[$this->error_code])) {
