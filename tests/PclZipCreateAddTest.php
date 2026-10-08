@@ -205,21 +205,51 @@ class PclZipCreateAddTest extends PclZipTestCase
 
     public function testOptionDefaultThreshold()
     {
-        $zip = $this->archive();
-        $options = array();
-        $prev = ini_get('memory_limit');
-        if (@ini_set('memory_limit', '4M') === false) {
-            $this->markTestSkipped('Cannot set memory_limit');
+        $threshold4m = $this->probeDefaultThresholdInChildProcess('4M');
+        $probe2m = $this->probeDefaultThresholdInChildProcess('2M');
+        $this->assertSame('1971322', $threshold4m);
+        $this->assertSame('none', $probe2m);
+    }
+
+    /**
+     * Run privOptionDefaultThreshold in an isolated CLI process with only pclzip.lib.php loaded.
+     *
+     * @param string $memoryLimit
+     * @return string threshold value or the literal "none"
+     */
+    private function probeDefaultThresholdInChildProcess($memoryLimit)
+    {
+        $lib = dirname(__DIR__) . '/pclzip.lib.php';
+        $code = sprintf(
+            'require %s; ini_set("memory_limit", %s); $z = new PclZip("dummy.zip"); $opts = array();'
+            . ' $z->privOptionDefaultThreshold($opts);'
+            . ' echo isset($opts[PCLZIP_OPT_TEMP_FILE_THRESHOLD]) ? (string) $opts[PCLZIP_OPT_TEMP_FILE_THRESHOLD] : "none";',
+            var_export($lib, true),
+            var_export($memoryLimit, true)
+        );
+
+        $descriptor = array(
+            0 => array('pipe', 'r'),
+            1 => array('pipe', 'w'),
+            2 => array('pipe', 'w'),
+        );
+        $cmdline = escapeshellarg(PHP_BINARY) . ' -d display_errors=0 -r ' . escapeshellarg($code);
+        $process = proc_open($cmdline, $descriptor, $pipes, dirname(__DIR__));
+        if (!is_resource($process)) {
+            $this->fail('Failed to start child PHP process for memory_limit probe');
         }
-        $zip->privOptionDefaultThreshold($options);
-        $threshold4m = isset($options[PCLZIP_OPT_TEMP_FILE_THRESHOLD]) ? $options[PCLZIP_OPT_TEMP_FILE_THRESHOLD] : null;
-        ini_set('memory_limit', '2M');
-        $options = array();
-        $zip->privOptionDefaultThreshold($options);
-        $hasThreshold2m = isset($options[PCLZIP_OPT_TEMP_FILE_THRESHOLD]);
-        ini_set('memory_limit', $prev);
-        $this->assertEquals(1971322, $threshold4m);
-        $this->assertFalse($hasThreshold2m);
+        fclose($pipes[0]);
+        $stdout = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+        $exitCode = proc_close($process);
+
+        if ($exitCode !== 0) {
+            $this->fail('Child PHP process failed (exit ' . $exitCode . '): ' . trim($stderr));
+        }
+
+        return trim($stdout);
     }
 
     public function testCreateErrors()
